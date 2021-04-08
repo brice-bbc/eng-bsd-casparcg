@@ -2,10 +2,9 @@ ARG IMAGE_BASE
 
 FROM ${IMAGE_BASE} as BUILD
     ARG PROC_COUNT=8
-
-	ADD http://opensource.spotify.com/cefbuilds/cef_binary_3.3578.1870.gc974488_linux64_minimal.tar.bz2 /opt/cef.tar.bz2
-	WORKDIR /opt
-	RUN tar -jxf cef.tar.bz2 && mv /opt/cef_binary_* /opt/cef
+        ADD https://cef-builds.spotifycdn.com/cef_binary_89.0.18%2Bgb36241d%2Bchromium-89.0.4389.114_linux64_minimal.tar.bz2 /opt/cef.tar.bz2
+        WORKDIR /opt
+        RUN tar -jxf cef.tar.bz2 && mv /opt/cef_binary_* /opt/cef
     RUN mkdir /opt/build
     WORKDIR /opt/build
     RUN cmake /opt/cef && make -j $PROC_COUNT
@@ -13,4 +12,4 @@ FROM ${IMAGE_BASE} as BUILD
     RUN strip /opt/cef/Release/libcef.so
 
 FROM scratch
-	COPY --from=BUILD /opt/cef /opt/cef
+    COPY --from=BUILD /opt/cef /opt/cef

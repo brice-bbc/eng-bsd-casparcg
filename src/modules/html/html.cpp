@@ -63,7 +63,7 @@ void caspar_log(const CefRefPtr<CefBrowser>&        browser,
         auto msg = CefProcessMessage::Create(LOG_MESSAGE_NAME);
         msg->GetArgumentList()->SetInt(0, level);
         msg->GetArgumentList()->SetString(1, message);
-        browser->SendProcessMessage(PID_BROWSER, msg);
+        browser->GetMainFrame()->SendProcessMessage(PID_BROWSER, msg);
     }
 }
 
@@ -87,7 +87,7 @@ class remove_handler : public CefV8Handler
             return false;
         }
 
-        browser_->SendProcessMessage(PID_BROWSER, CefProcessMessage::Create(REMOVE_MESSAGE_NAME));
+        browser_->GetMainFrame()->SendProcessMessage(PID_BROWSER, CefProcessMessage::Create(REMOVE_MESSAGE_NAME));
 
         return true;
     }
@@ -126,30 +126,30 @@ class renderer_application
         CefRefPtr<CefV8Value>     ret;
         CefRefPtr<CefV8Exception> exception;
         bool                      injected = context->Eval(R"(
-			var requestedAnimationFrames	= {};
-			var currentAnimationFrameId		= 0;
+                        var requestedAnimationFrames    = {};
+                        var currentAnimationFrameId             = 0;
 
             window.caspar = {};
 
-			window.requestAnimationFrame = function(callback) {
-				requestedAnimationFrames[++currentAnimationFrameId] = callback;
-				return currentAnimationFrameId;
-			}
+                        window.requestAnimationFrame = function(callback) {
+                                requestedAnimationFrames[++currentAnimationFrameId] = callback;
+                                return currentAnimationFrameId;
+                        }
 
-			window.cancelAnimationFrame = function(animationFrameId) {
-				delete requestedAnimationFrames[animationFrameId];
-			}
+                        window.cancelAnimationFrame = function(animationFrameId) {
+                                delete requestedAnimationFrames[animationFrameId];
+                        }
 
-			function tickAnimations() {
-				var requestedFrames = requestedAnimationFrames;
-				var timestamp = performance.now();
-				requestedAnimationFrames = {};
+                        function tickAnimations() {
+                                var requestedFrames = requestedAnimationFrames;
+                                var timestamp = performance.now();
+                                requestedAnimationFrames = {};
 
-				for (var animationFrameId in requestedFrames)
-					if (requestedFrames.hasOwnProperty(animationFrameId))
-						requestedFrames[animationFrameId](timestamp);
-			}
-		)",
+                                for (var animationFrameId in requestedFrames)
+                                        if (requestedFrames.hasOwnProperty(animationFrameId))
+                                                requestedFrames[animationFrameId](timestamp);
+                        }
+                )",
                                       CefString(),
                                       1,
                                       ret,
@@ -198,10 +198,10 @@ class renderer_application
             command_line->AppendSwitchWithValue("disable-gpu-vsync", "gpu");
         }
     }
-
-    bool OnProcessMessageReceived(CefRefPtr<CefBrowser>        browser,
-                                  CefProcessId                 source_process,
-                                  CefRefPtr<CefProcessMessage> message) override
+    virtual bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
+        CefRefPtr<CefFrame> frame,
+        CefProcessId source_process,
+        CefRefPtr<CefProcessMessage> message) OVERRIDE
     {
         if (message->GetName().ToString() == TICK_MESSAGE_NAME) {
             for (auto& context : contexts_) {

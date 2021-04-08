@@ -189,7 +189,7 @@ class html_client
                        CefWindowInfo&          windowInfo,
                        CefRefPtr<CefClient>&   client,
                        CefBrowserSettings&     settings,
-                       bool*                   no_javascript_access) override
+                       bool*                   no_javascript_access) 
     {
         // This blocks popup windows from opening, as they dont make sense and hit an exception in get_browser_host upon
         // closing
@@ -356,9 +356,10 @@ class html_client
         execute_queued_javascript();
     }
 
-    bool OnProcessMessageReceived(CefRefPtr<CefBrowser>        browser,
-                                  CefProcessId                 source_process,
-                                  CefRefPtr<CefProcessMessage> message) override
+    virtual bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
+        CefRefPtr<CefFrame> frame,
+        CefProcessId source_process,
+        CefRefPtr<CefProcessMessage> message) OVERRIDE
     {
         auto name = message->GetName().ToString();
 
@@ -392,7 +393,7 @@ class html_client
     void invoke_requested_animation_frames()
     {
         if (browser_ != nullptr)
-            browser_->SendProcessMessage(CefProcessId::PID_RENDERER, CefProcessMessage::Create(TICK_MESSAGE_NAME));
+            browser_->GetMainFrame()->SendProcessMessage(CefProcessId::PID_RENDERER, CefProcessMessage::Create(TICK_MESSAGE_NAME));
 
         graph_->set_value("tick-time", tick_timer_.elapsed() * format_desc_.fps * 0.5);
         tick_timer_.restart();
@@ -487,7 +488,7 @@ class html_producer : public core::frame_producer
             browser_settings.webgl        = enable_gpu ? cef_state_t::STATE_ENABLED : cef_state_t::STATE_DISABLED;
             double fps                    = format_desc.fps;
             browser_settings.windowless_frame_rate = int(ceil(fps));
-            CefBrowserHost::CreateBrowser(window_info, client_.get(), url, browser_settings, nullptr);
+            CefBrowserHost::CreateBrowser(window_info, client_.get(), url, browser_settings, nullptr, nullptr);
         });
     }
 
